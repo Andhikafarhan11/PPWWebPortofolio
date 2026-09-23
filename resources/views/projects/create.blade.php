@@ -4,7 +4,16 @@
 <div class="container py-4">
     <h2>Tambah Project Baru</h2>
     <hr>
-
+    @if ($errors->any())
+        <div style="background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;">
+            <p style="font-weight: bold; margin-bottom: 8px;">Terdapat kesalahan pada pengisian form:</p>
+            <ul style="margin: 0; padding-left: 20px;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <form action="{{ route('projects.store') }}" method="POST">
         @csrf
 

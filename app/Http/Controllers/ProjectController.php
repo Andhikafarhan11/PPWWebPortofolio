@@ -29,25 +29,25 @@ class ProjectController extends Controller
      */
    public function store(Request $request)
    {
-    $request->validate([
-        'judul'     => 'required|max:200',
+    $validatedData = $request->validate([
+        'judul'     => 'required|string|min:5|max:255',
         'kategori'  => 'nullable|string|max:100',
-        'deskripsi' => 'required',
-        'gambar'    => 'nullable|string',
+        'deskripsi' => 'required|string|min:10',
         'tautan'    => 'nullable|url',
     ]);
 
-    Project::create($request->only(['judul', 'kategori', 'deskripsi', 'gambar', 'tautan']));
+    Project::create($validatedData);
 
-    return redirect()->route('projects.index');
-}
-
+    // Flash message saat membuat data baru
+    return redirect()->route('projects.index')
+        ->with('success', 'Project baru berhasil ditambahkan!');
+   }
     /**
      * Display the specified resource.
      */
     public function show($id)
     {
-        $project = Project::find($id);
+        $project = Project::findorfail($id);
     return view('projects.show', compact('project'));
     }
 
@@ -56,22 +56,39 @@ class ProjectController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $project = Project::findOrFail($id);
+
+        return view('projects.edit', compact('project'));
     }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
-    {
-        //
-    }
+{
+    $validatedData = $request->validate([
+        'judul'     => 'required|string|min:5|max:255',
+        'kategori'  => 'nullable|string|max:100',
+        'deskripsi' => 'required|string|min:10',
+        'tautan'    => 'nullable|url',
+    ]);
+
+    $project = Project::findOrFail($id);
+    $project->update($validatedData);
+
+    return redirect()->route('projects.index')
+        ->with('success', 'Project berhasil diperbarui!');
+}
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
-    {
-        //
-    }
-}
+{
+    $project = Project::findOrFail($id);
+    $project->delete();
+
+    // Flash message saat menghapus data
+    return redirect()->route('projects.index')
+        ->with('success', 'Project berhasil dihapus!');
+}}
