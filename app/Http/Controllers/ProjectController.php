@@ -7,88 +7,100 @@ use App\Models\Project;
 
 class ProjectController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    // Menampilkan hanya project yang berstatus published
     public function index()
     {
-        $projects = Project::all();
+        $projects = Project::published()->latest()->get();
         return view('projects.index', compact('projects'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    // Menampilkan halaman sampah (project yang di-soft delete)
+    public function trash()
+    {
+        $trashedProjects = Project::onlyTrashed()->latest()->get();
+        return view('projects.trash', compact('trashedProjects'));
+    }
+
     public function create()
     {
         return view('projects.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-   public function store(Request $request)
-   {
-    $validatedData = $request->validate([
-        'judul'     => 'required|string|min:5|max:255',
-        'kategori'  => 'nullable|string|max:100',
-        'deskripsi' => 'required|string|min:10',
-        'tautan'    => 'nullable|url',
-    ]);
-
-    Project::create($validatedData);
-
-    // Flash message saat membuat data baru
-    return redirect()->route('projects.index')
-        ->with('success', 'Project baru berhasil ditambahkan!');
-   }
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
+    public function store(Request $request)
     {
-        $project = Project::findorfail($id);
-    return view('projects.show', compact('project'));
+        $validatedData = $request->validate([
+            'judul'     => 'required|string|min:5|max:255',
+            'kategori'  => 'nullable|string|max:100',
+            'deskripsi' => 'required|string|min:10',
+            'tautan'    => 'nullable|url',
+            'status'    => 'nullable|in:draft,published',
+        ]);
+
+        // Default status jika tidak diisi
+        $validatedData['status'] = $validatedData['status'] ?? 'published';
+
+        Project::create($validatedData);
+
+        return redirect()->route('projects.index')
+            ->with('success', 'Project baru berhasil ditambahkan!');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+    public function show($id)
+    {
+        $project = Project::findOrFail($id);
+        return view('projects.show', compact('project'));
+    }
+
     public function edit(string $id)
     {
         $project = Project::findOrFail($id);
-
         return view('projects.edit', compact('project'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
-{
-    $validatedData = $request->validate([
-        'judul'     => 'required|string|min:5|max:255',
-        'kategori'  => 'nullable|string|max:100',
-        'deskripsi' => 'required|string|min:10',
-        'tautan'    => 'nullable|url',
-    ]);
+    {
+        $validatedData = $request->validate([
+            'judul'     => 'required|string|min:5|max:255',
+            'kategori'  => 'nullable|string|max:100',
+            'deskripsi' => 'required|string|min:10',
+            'tautan'    => 'nullable|url',
+            'status'    => 'nullable|in:draft,published',
+        ]);
 
-    $project = Project::findOrFail($id);
-    $project->update($validatedData);
+        $project = Project::findOrFail($id);
+        $project->update($validatedData);
 
-    return redirect()->route('projects.index')
-        ->with('success', 'Project berhasil diperbarui!');
-}
+        return redirect()->route('projects.index')
+            ->with('success', 'Project berhasil diperbarui!');
+    }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    // Soft Delete Project
     public function destroy(string $id)
-{
-    $project = Project::findOrFail($id);
-    $project->delete();
+    {
+        $project = Project::findOrFail($id);
+        $project->delete();
 
-    // Flash message saat menghapus data
-    return redirect()->route('projects.index')
-        ->with('success', 'Project berhasil dihapus!');
-}}
+        return redirect()->route('projects.index')
+            ->with('success', 'Project berhasil dipindahkan ke sampah!');
+    }
+
+    // Restore Project dari Sampah
+    public function restore($id)
+    {
+        $project = Project::withTrashed()->findOrFail($id);
+        $project->restore();
+
+        return redirect()->route('projects.trash')
+            ->with('success', 'Project berhasil dipulihkan!');
+    }
+
+    // Permanent Delete Project
+    public function forceDelete($id)
+    {
+        $project = Project::withTrashed()->findOrFail($id);
+        $project->forceDelete();
+
+        return redirect()->route('projects.trash')
+            ->with('success', 'Project berhasil dihapus secara permanen!');
+    }
+}
