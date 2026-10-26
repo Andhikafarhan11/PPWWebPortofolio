@@ -7,10 +7,18 @@ use App\Models\Project;
 
 class ProjectController extends Controller
 {
-    // Menampilkan hanya project yang berstatus published
-    public function index()
+    public function index(Request $request)
     {
-        $projects = Project::published()->latest()->get();
+        $query = Project::published()->latest();
+
+        if ($request->filled('search')) {
+            $query->where('judul', 'like', '%' . $request->search . '%');
+        }
+
+        $perPage = in_array((int) $request->per_page, [5, 10, 25]) ? (int) $request->per_page : 10;
+
+        $projects = $query->paginate($perPage)->withQueryString();
+
         return view('projects.index', compact('projects'));
     }
 
