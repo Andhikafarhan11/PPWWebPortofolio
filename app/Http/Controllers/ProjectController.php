@@ -22,7 +22,6 @@ class ProjectController extends Controller
         return view('projects.index', compact('projects'));
     }
 
-    // Menampilkan halaman sampah (project yang di-soft delete)
     public function trash()
     {
         $trashedProjects = Project::onlyTrashed()->latest()->get();
@@ -44,7 +43,6 @@ class ProjectController extends Controller
             'status'    => 'nullable|in:draft,published',
         ]);
 
-        // Default status jika tidak diisi
         $validatedData['status'] = $validatedData['status'] ?? 'published';
 
         Project::create($validatedData);
@@ -53,7 +51,7 @@ class ProjectController extends Controller
             ->with('success', 'Project baru berhasil ditambahkan!');
     }
 
-    public function show($id)
+    public function show(string $id)
     {
         $project = Project::findOrFail($id);
         return view('projects.show', compact('project'));
@@ -82,7 +80,6 @@ class ProjectController extends Controller
             ->with('success', 'Project berhasil diperbarui!');
     }
 
-    // Soft Delete Project
     public function destroy(string $id)
     {
         $project = Project::findOrFail($id);
@@ -92,8 +89,7 @@ class ProjectController extends Controller
             ->with('success', 'Project berhasil dipindahkan ke sampah!');
     }
 
-    // Restore Project dari Sampah
-    public function restore($id)
+    public function restore(string $id)
     {
         $project = Project::withTrashed()->findOrFail($id);
         $project->restore();
@@ -102,8 +98,7 @@ class ProjectController extends Controller
             ->with('success', 'Project berhasil dipulihkan!');
     }
 
-    // Permanent Delete Project
-    public function forceDelete($id)
+    public function forceDelete(string $id)
     {
         $project = Project::withTrashed()->findOrFail($id);
         $project->forceDelete();
