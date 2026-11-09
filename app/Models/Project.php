@@ -12,11 +12,12 @@ class Project extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'judul',
-        'kategori',
-        'deskripsi',
-        'tautan',
-        'status',
+    'judul',
+    'thumbnail', // Wajib ditambahkan agar path tersimpan
+    'kategori',
+    'deskripsi',
+    'tautan',
+    'status',
     ];
 
     protected $casts = [
@@ -38,5 +39,20 @@ class Project extends Model
         }
 
         return $query;
+    }
+    
+    public function category()
+    {
+    return $this->belongsTo(Category::class);
+    }
+
+    public function technologies()
+    {
+    return $this->belongsToMany(Technology::class);
+    }
+
+    public function images()
+    {
+    return $this->hasMany(ProjectImage::class)->orderBy('sort_order');
     }
 }

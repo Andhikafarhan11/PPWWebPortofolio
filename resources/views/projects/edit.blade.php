@@ -17,51 +17,76 @@
         </div>
     @endif
 
-    <form action="{{ route('projects.update', $project->id) }}" method="POST">
+    {{-- Penambahan enctype="multipart/form-data" --}}
+    <form action="{{ route('projects.update', $project->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         <div class="mb-3">
-            <label for="title" class="form-label">Judul Project</label>
+            <label for="judul" class="form-label">Judul Project</label>
             <input type="text" 
-                   class="form-control @error('title') is-invalid @enderror" 
-                   id="title" 
-                   name="title" 
-                   value="{{ old('title', $project->title) }}" 
+                   class="form-control @error('judul') is-invalid @enderror" 
+                   id="judul" 
+                   name="judul" 
+                   value="{{ old('judul', $project->judul ?? $project->title) }}" 
                    required>
-            @error('title')
+            @error('judul')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        {{-- Input Thumbnail & Pratinjau File Lama --}}
+        <div class="mb-3">
+            <label for="thumbnail" class="form-label">Thumbnail Project (Kosongkan jika tidak ingin mengubah)</label>
+            
+            @if ($project->thumbnail)
+                <div class="mb-2">
+                    <img src="{{ asset('storage/' . $project->thumbnail) }}" 
+                         alt="{{ $project->judul ?? 'Thumbnail' }}" 
+                         class="img-thumbnail" 
+                         style="max-height: 150px; display: block;">
+                    <small class="text-muted">Thumbnail saat ini</small>
+                </div>
+            @endif
+
+            <input type="file" 
+                   class="form-control @error('thumbnail') is-invalid @enderror" 
+                   id="thumbnail" 
+                   name="thumbnail" 
+                   accept="image/*">
+            @error('thumbnail')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
 
         <div class="mb-3">
-            <label for="category" class="form-label">Kategori / Teknologi</label>
+            <label for="kategori" class="form-label">Kategori / Teknologi</label>
             <input type="text" 
-                   class="form-control @error('category') is-invalid @enderror" 
-                   id="category" 
-                   name="category" 
-                   value="{{ old('category', $project->kategori) }}">
-            @error('category')
+                   class="form-control @error('kategori') is-invalid @enderror" 
+                   id="kategori" 
+                   name="kategori" 
+                   value="{{ old('kategori', $project->kategori ?? $project->category) }}">
+            @error('kategori')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
 
         <div class="mb-3">
-            <label for="link" class="form-label">Link Project / GitHub (Opsional)</label>
+            <label for="tautan" class="form-label">Link Project / GitHub (Opsional)</label>
             <input type="text" 
-                   class="form-control @error('link') is-invalid @enderror" 
-                   id="link" 
-                   name="link" 
-                   value="{{ old('link', $project->link) }}">
-            @error('link')
+                   class="form-control @error('tautan') is-invalid @enderror" 
+                   id="tautan" 
+                   name="tautan" 
+                   value="{{ old('tautan', $project->tautan ?? $project->link) }}">
+            @error('tautan')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
 
         <div class="mb-3">
-            <label for="description" class="form-label">Deskripsi Project</label>
+            <label for="deskripsi" class="form-label">Deskripsi Project</label>
             <textarea class="form-control @error('deskripsi') is-invalid @enderror" 
-                      id="description" 
+                      id="deskripsi" 
                       name="deskripsi" 
                       rows="5" 
                       required>{{ old('deskripsi', $project->deskripsi) }}</textarea>

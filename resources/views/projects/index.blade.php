@@ -55,9 +55,22 @@
 
     @if(count($projects) > 0)
         <div class="row">
-            @foreach ($projects as $key => $project)
+            @foreach ($projects as $key =>$project)
                 <div class="col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm border-0 rounded-3">
+                    <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden">
+                        
+                        {{-- Tampilan Gambar Thumbnail Project --}}
+                        @if ($project->thumbnail)
+                            <img src="{{ asset('storage/' . $project->thumbnail) }}" 
+                                 alt="{{ $project->judul }}" 
+                                 class="card-img-top" 
+                                 style="height: 200px; object-fit: cover;">
+                        @else
+                            <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="height: 180px;">
+                                <small>Tidak ada thumbnail</small>
+                            </div>
+                        @endif
+
                         <div class="card-body d-flex flex-column p-4">
                             {{-- Baris Badge Kategori, Status, dan Nomor Urut Berlanjut --}}
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -72,7 +85,7 @@
 
                                 {{-- Indikator nomor urut berlanjut antarhalaman --}}
                                 <span class="badge bg-light text-dark border fw-bold">
-                                    #{{ $projects->firstItem() + $key }}
+                                    #{{ $projects->firstItem() +$key }}
                                 </span>
                             </div>
 

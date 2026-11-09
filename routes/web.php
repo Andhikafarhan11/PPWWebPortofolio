@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProjectGalleryController;
 
 // 1. Rute Publik
 Route::get('/', fn() => view('home'))->name('home');
@@ -10,17 +12,23 @@ Route::get('/home', fn() => redirect()->route('home'));
 Route::get('/about', fn() => view('about'))->name('about');
 Route::get('/education', fn() => view('education'))->name('education');
 
-// Rute Dashboard bawaan Breeze
+// Rute Dashboard bawaan Breeze (Otomatis diarahkan ke /post/dashboard)
 Route::get('/dashboard', function () {
-    return redirect()->route('post.profile.saya');
+    return redirect()->route('post.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // 2. Rute Khusus Semua User yang Sudah Login (Auth)
 Route::middleware('auth')->group(function () {
-    // Latihan Poin 3: Halaman /post/profile-saya khusus user login
-    Route::get('/post/profile-saya', function () {
-        return view('profile-saya');
-    })->name('post.profile.saya');
+    // Rute Grup /post (Dashboard & Profile Saya)
+    Route::prefix('post')->name('post.')->group(function () {
+        // Materi Pertemuan 10: Halaman /post/dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Halaman /post/profile-saya khusus user login
+        Route::get('/profile-saya', function () {
+            return view('profile-saya');
+        })->name('profile.saya');
+    });
 
     // Rute Bawaan Profile Breeze
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -35,6 +43,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/projects/{id}/force-delete', [ProjectController::class, 'forceDelete'])->name('projects.forceDelete');
 
     Route::resource('projects', ProjectController::class);
+
+    // Materi Pertemuan 10: Rute Upload & Hapus Gambar Gallery
+    Route::post('/projects/{project}/gallery', [ProjectGalleryController::class, 'store'])->name('projects.gallery.store');
+    Route::delete('/projects/{project}/gallery/{image}', [ProjectGalleryController::class, 'destroy'])->name('projects.gallery.destroy');
 });
 
 require __DIR__.'/auth.php';
