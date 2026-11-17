@@ -4,23 +4,62 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\Category;
+use App\Models\Technology;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Project::published()->latest();
+        $query = Project::with(['category', 'technologies'])
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('judul', 'like', '%' . $search . '%')
+                        ->orWhere('short_description', 'like', '%' . $search . '%')
+                        ->orWhere('deskripsi', 'like', '%' . $search . '%');
+                });
+            })
+            ->when($request->category, function ($q, $categorySlug) {
+                $q->where(function ($sub) use ($categorySlug) {
+                    $sub->whereHas('category', fn($w) => $w->where('slug', $categorySlug))
+                        ->orWhere('kategori', 'like', '%' . str_replace('-', ' ', $categorySlug) . '%');
+                });
+            })
+            ->when($request->technology, function ($q, $techSlug) {
+                $q->whereHas('technologies', fn($w) => $w->where('slug', $techSlug));
+            })
+            ->when($request->status, function ($q, $status) {
+                $q->where('status', $status);
+            });
 
-        if ($request->filled('search')) {
-            $query->where('judul', 'like', '%' . $request->search . '%');
+        switch ($request->query('sort')) {
+            case 'terlama':
+                $query->oldest();
+                break;
+            case 'az':
+                $query->orderBy('judul', 'asc');
+                break;
+            case 'tanggal_terbaru':
+                $query->orderByRaw('project_date IS NULL, project_date DESC');
+                break;
+            case 'tanggal_terlama':
+                $query->orderByRaw('project_date IS NULL, project_date ASC');
+                break;
+            default:
+                $query->latest();
+                break;
         }
 
-        $perPage = in_array((int) $request->per_page, [5, 10, 25]) ? (int) $request->per_page : 10;
+        $perPage = in_array((int) $request->per_page, [5, 9, 10, 25]) ? (int) $request->per_page : 10;
 
         $projects = $query->paginate($perPage)->withQueryString();
 
-        return view('projects.index', compact('projects'));
+        $categories = Category::orderBy('name')->get();
+        $technologies = Technology::orderBy('name')->get();
+
+        return view('projects.index', compact('projects', 'categories', 'technologies'));
     }
 
     public function trash()
@@ -31,18 +70,25 @@ class ProjectController extends Controller
 
     public function create()
     {
-        return view('projects.create');
+        $categories = Category::orderBy('name')->get();
+        $technologies = Technology::orderBy('name')->get();
+        return view('projects.create', compact('categories', 'technologies'));
     }
 
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'judul'     => 'required|string|min:5|max:255',
-            'kategori'  => 'nullable|string|max:100',
-            'deskripsi' => 'required|string|min:10',
-            'tautan'    => 'nullable|url',
-            'status'    => 'nullable|in:draft,published',
-            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=400,min_height=300',
+            'judul'             => 'required|string|min:5|max:255',
+            'category_id'       => 'nullable|exists:categories,id',
+            'kategori'          => 'nullable|string|max:100',
+            'short_description' => 'nullable|string|max:255',
+            'deskripsi'         => 'required|string|min:10',
+            'project_date'      => 'nullable|date',
+            'tautan'            => 'nullable|url',
+            'status'            => 'nullable|in:draft,published',
+            'thumbnail'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=400,min_height=300',
+            'technologies'      => 'nullable|array',
+            'technologies.*'    => 'exists:technologies,id',
         ], [
             'thumbnail.image'      => 'File thumbnail harus berupa gambar (bukan dokumen/PDF).',
             'thumbnail.mimes'      => 'Format thumbnail harus berupa: jpg, jpeg, png, atau webp.',
@@ -50,7 +96,8 @@ class ProjectController extends Controller
             'thumbnail.dimensions' => 'Dimensi gambar terlalu kecil! Minimal berukuran 400 x 300 piksel.',
         ]);
 
-        // Simpan file thumbnail ke folder storage/app/public/projects/thumbnails jika diunggah
+        $validatedData['slug'] = Str::slug($validatedData['judul']);
+
         if ($request->hasFile('thumbnail')) {
             $validatedData['thumbnail'] = $request->file('thumbnail')
                 ->store('projects/thumbnails', 'public');
@@ -58,7 +105,14 @@ class ProjectController extends Controller
 
         $validatedData['status'] = $validatedData['status'] ?? 'published';
 
-        Project::create($validatedData);
+        $technologyIds = $validatedData['technologies'] ?? [];
+        unset($validatedData['technologies']);
+
+        $project = Project::create($validatedData);
+
+        if (!empty($technologyIds)) {
+            $project->technologies()->sync($technologyIds);
+        }
 
         return redirect()->route('projects.index')
             ->with('success', 'Project baru berhasil ditambahkan!');
@@ -66,25 +120,36 @@ class ProjectController extends Controller
 
     public function show(string $id)
     {
-        $project = Project::with('images')->findOrFail($id);
+        $project = Project::with(['category', 'technologies', 'images'])
+            ->where('id', $id)
+            ->orWhere('slug', $id)
+            ->firstOrFail();
+
         return view('projects.show', compact('project'));
     }
 
     public function edit(string $id)
     {
-        $project = Project::findOrFail($id);
-        return view('projects.edit', compact('project'));
+        $project = Project::with('technologies')->findOrFail($id);
+        $categories = Category::orderBy('name')->get();
+        $technologies = Technology::orderBy('name')->get();
+        return view('projects.edit', compact('project', 'categories', 'technologies'));
     }
 
     public function update(Request $request, string $id)
     {
         $validatedData = $request->validate([
-            'judul'     => 'required|string|min:5|max:255',
-            'kategori'  => 'nullable|string|max:100',
-            'deskripsi' => 'required|string|min:10',
-            'tautan'    => 'nullable|url',
-            'status'    => 'nullable|in:draft,published',
-            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=400,min_height=300',
+            'judul'             => 'required|string|min:5|max:255',
+            'category_id'       => 'nullable|exists:categories,id',
+            'kategori'          => 'nullable|string|max:100',
+            'short_description' => 'nullable|string|max:255',
+            'deskripsi'         => 'required|string|min:10',
+            'project_date'      => 'nullable|date',
+            'tautan'            => 'nullable|url',
+            'status'            => 'nullable|in:draft,published',
+            'thumbnail'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=400,min_height=300',
+            'technologies'      => 'nullable|array',
+            'technologies.*'    => 'exists:technologies,id',
         ], [
             'thumbnail.image'      => 'File thumbnail harus berupa gambar (bukan dokumen/PDF).',
             'thumbnail.mimes'      => 'Format thumbnail harus berupa: jpg, jpeg, png, atau webp.',
@@ -93,20 +158,25 @@ class ProjectController extends Controller
         ]);
 
         $project = Project::findOrFail($id);
+        $validatedData['slug'] = Str::slug($validatedData['judul']);
 
-        // Jika ada thumbnail baru yang diunggah
         if ($request->hasFile('thumbnail')) {
-            // Hapus file thumbnail lama dari disk public jika ada
             if ($project->thumbnail && Storage::disk('public')->exists($project->thumbnail)) {
                 Storage::disk('public')->delete($project->thumbnail);
             }
 
-            // Simpan thumbnail baru
             $validatedData['thumbnail'] = $request->file('thumbnail')
                 ->store('projects/thumbnails', 'public');
         }
 
+        $technologyIds = $validatedData['technologies'] ?? null;
+        unset($validatedData['technologies']);
+
         $project->update($validatedData);
+
+        if (is_array($technologyIds)) {
+            $project->technologies()->sync($technologyIds);
+        }
 
         return redirect()->route('projects.index')
             ->with('success', 'Project berhasil diperbarui!');
@@ -134,12 +204,10 @@ class ProjectController extends Controller
     {
         $project = Project::withTrashed()->with('images')->findOrFail($id);
 
-        // 1. Hapus file fisik thumbnail dari disk public
         if ($project->thumbnail && Storage::disk('public')->exists($project->thumbnail)) {
             Storage::disk('public')->delete($project->thumbnail);
         }
 
-        // 2. Hapus seluruh file fisik gambar gallery milik project ini
         if ($project->images) {
             foreach ($project->images as $image) {
                 if ($image->image && Storage::disk('public')->exists($image->image)) {
@@ -148,12 +216,10 @@ class ProjectController extends Controller
             }
         }
 
-        // 3. Lepaskan relasi pivot technologies jika relasi didefinisikan
         if (method_exists($project, 'technologies')) {
             $project->technologies()->detach();
         }
 
-        // 4. Hapus data secara permanen dari database
         $project->forceDelete();
 
         return redirect()->route('projects.trash')
