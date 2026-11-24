@@ -5,8 +5,11 @@
         <a href="{{ route('about') }}" style="color: white; margin-right: 15px; text-decoration: none;">About</a>
         <a href="{{ route('education') }}" style="color: white; margin-right: 15px; text-decoration: none;">Education</a>
         <a href="{{ route('projects.index') }}" style="color: white; margin-right: 15px; text-decoration: none;">Projects</a>
+        <a href="{{ route('contact') }}" style="color: white; margin-right: 15px; text-decoration: none;">Contact</a>
 
         @auth
+            <a href="{{ route('post.dashboard') }}" style="color: white; margin-right: 15px; text-decoration: none;">Dashboard</a>
+            <a href="{{ route('post.contacts.index') }}" style="color: #38bdf8; margin-right: 15px; text-decoration: none; font-weight: bold;">Messages</a>
             <a href="{{ url('/post/profile-saya') }}" style="color: white; text-decoration: none;">Profile Saya</a>
         @endauth
     </div>

@@ -1,19 +1,26 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Dashboard') }}
+            </h2>
+            <a href="{{ route('post.contacts.index') }}" class="text-sm bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                Lihat Pesan Masuk ({{ $unreadMessages }} Belum Dibaca)
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             
-            {{-- Kartu Ringkasan Statistik (Stat Cards) --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {{-- Kartu Ringkasan Statistik (6 Stat Cards dengan Grid Rapi) --}}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <x-stat-card label="Projects" :value="$totalProjects" color="text-blue-600" />
                 <x-stat-card label="Categories" :value="$totalCategories" color="text-green-600" />
                 <x-stat-card label="Technologies" :value="$totalTechnologies" color="text-purple-600" />
                 <x-stat-card label="Skills" :value="$totalSkills" color="text-orange-600" />
+                <x-stat-card label="Messages" :value="$totalMessages" color="text-indigo-600" />
+                <x-stat-card label="Unread Messages" :value="$unreadMessages" color="text-red-600" />
             </div>
 
             {{-- Daftar 5 Project Terbaru --}}

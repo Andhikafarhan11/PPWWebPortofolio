@@ -5,12 +5,20 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectGalleryController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ContactAdminController;
 
 // 1. Rute Publik
 Route::get('/', fn() => view('home'))->name('home');
 Route::get('/home', fn() => redirect()->route('home'));
 Route::get('/about', fn() => view('about'))->name('about');
 Route::get('/education', fn() => view('education'))->name('education');
+
+// Materi REST API & Rate Limiting: Rute Form Contact + Throttle (Maks 3x/menit)
+Route::get('/contact', [ContactController::class, 'create'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])
+    ->middleware('throttle:contact')
+    ->name('contact.store');
 
 // Rute Dashboard bawaan Breeze (Otomatis diarahkan ke /post/dashboard)
 Route::get('/dashboard', function () {
@@ -19,15 +27,19 @@ Route::get('/dashboard', function () {
 
 // 2. Rute Khusus Semua User yang Sudah Login (Auth)
 Route::middleware('auth')->group(function () {
-    // Rute Grup /post (Dashboard & Profile Saya)
+    // Rute Grup /post (Dashboard, Profile Saya, & Admin Contacts)
     Route::prefix('post')->name('post.')->group(function () {
-        // Materi Pertemuan 10: Halaman /post/dashboard
+        // Halaman /post/dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Halaman /post/profile-saya khusus user login
         Route::get('/profile-saya', function () {
             return view('profile-saya');
         })->name('profile.saya');
+
+        // LATIHAN 3: Halaman Admin Contacts di /post/contacts
+        Route::get('/contacts', [ContactAdminController::class, 'index'])->name('contacts.index');
+        Route::get('/contacts/{contact}', [ContactAdminController::class, 'show'])->name('contacts.show');
     });
 
     // Rute Bawaan Profile Breeze
@@ -44,7 +56,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::resource('projects', ProjectController::class);
 
-    // Materi Pertemuan 10: Rute Upload & Hapus Gambar Gallery
+    // Rute Upload & Hapus Gambar Gallery
     Route::post('/projects/{project}/gallery', [ProjectGalleryController::class, 'store'])->name('projects.gallery.store');
     Route::delete('/projects/{project}/gallery/{image}', [ProjectGalleryController::class, 'destroy'])->name('projects.gallery.destroy');
 });
