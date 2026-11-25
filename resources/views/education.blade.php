@@ -3,6 +3,19 @@
 @section('title', 'Education - Portfolio')
 
 @section('content')
+    <h1>Riwayat Pendidikan</h1>
+    @forelse ($educations as $edu)
+        <div class="project-card">
+            <h3>{{ $edu->institution }}</h3>
+            <p><strong>{{ $edu->degree }}</strong> ({{ $edu->period }})</p>
+            <p>{{ $edu->description }}</p>
+        </div>
+    @empty
+        <p>Belum ada data pendidikan.</p>
+    @endforelse
+
+    <hr>
+
     <h1>Portofolio Project</h1>
     <p>Berikut adalah beberapa proyek pengembangan sistem web yang telah saya kerjakan:</p>
 

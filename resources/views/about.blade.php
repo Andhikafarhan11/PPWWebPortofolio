@@ -20,4 +20,15 @@
         <li><strong>Database:</strong> MySQL, Relational Database Design</li>
         <li><strong>Tools & Version Control:</strong> Git, GitHub, VS Code, Vite</li>
     </ul>
+
+    <h3>Pengalaman</h3>
+    @forelse ($experiences as $exp)
+        <div class="project-card">
+            <h4>{{ $exp->title }} — {{ $exp->company }}</h4>
+            <p><small>{{ $exp->period }}</small></p>
+            <p>{{ $exp->description }}</p>
+        </div>
+    @empty
+        <p>Belum ada data pengalaman.</p>
+    @endforelse
 @endsection

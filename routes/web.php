@@ -7,12 +7,13 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectGalleryController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactAdminController;
+use App\Http\Controllers\PortfolioController;
 
 // 1. Rute Publik
-Route::get('/', fn() => view('home'))->name('home');
+Route::get('/', [PortfolioController::class, 'home'])->name('home');
 Route::get('/home', fn() => redirect()->route('home'));
-Route::get('/about', fn() => view('about'))->name('about');
-Route::get('/education', fn() => view('education'))->name('education');
+Route::get('/about', [PortfolioController::class, 'about'])->name('about');
+Route::get('/education', [PortfolioController::class, 'education'])->name('education');
 
 // Materi REST API & Rate Limiting: Rute Form Contact + Throttle (Maks 3x/menit)
 Route::get('/contact', [ContactController::class, 'create'])->name('contact');
@@ -37,7 +38,8 @@ Route::middleware('auth')->group(function () {
             return view('profile-saya');
         })->name('profile.saya');
 
-        // LATIHAN 3: Halaman Admin Contacts di /post/contacts
+        Route::post('/cache/clear', [DashboardController::class, 'clearCache'])->name('cache.clear');
+        // Rute Admin Contacts (Hanya untuk user dengan role admin)
         Route::get('/contacts', [ContactAdminController::class, 'index'])->name('contacts.index');
         Route::get('/contacts/{contact}', [ContactAdminController::class, 'show'])->name('contacts.show');
     });
